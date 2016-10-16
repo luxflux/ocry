@@ -12,6 +12,10 @@ INCOMING_PATH = ENV.fetch('INCOMING_PATH')
 PDF_PATH = ENV.fetch('PDF_PATH')
 STORAGE_PATH = ENV.fetch('STORAGE_PATH')
 
+FileUtils::mkdir_p INCOMING_PATH
+FileUtils::mkdir_p PDF_PATH
+FileUtils::mkdir_p STORAGE_PATH
+
 def process(file)
   puts "Processing #{file}"
   image = RTesseract.new(file, lang: 'deu+eng', processor: 'mini_magick')
