@@ -5,16 +5,17 @@ require 'rtesseract'
 require 'shellwords'
 require 'rugged'
 
-raise 'INCOMING_PATH not specified' unless ENV['INCOMING_PATH']
-raise 'PDF_PATH not specified' unless ENV['PDF_PATH']
-raise 'STORAGE_PATH not specified' unless ENV['STORAGE_PATH']
-raise 'GIT_REPO not specified' unless ENV['GIT_REPO']
+%w(INCOMING_PATH PDF_PATH STORAGE_PATH GIT_REPO HTTP_USER HTTP_PASSWORD).each do |variable|
+  raise "#{variable} not specified" unless ENV[variable]
+end
 
 INCOMING_PATH = ENV.fetch('INCOMING_PATH')
 PDF_PATH = ENV.fetch('PDF_PATH')
 STORAGE_PATH = ENV.fetch('STORAGE_PATH')
 GIT_REPO = ENV.fetch('GIT_REPO')
 USER = { email: 'root@yux.ch', name: 'ocry', time: Time.now }
+HTTP_USER = ENV.fetch('HTTP_USER')
+HTTP_PASSWORD = ENV.fetch('HTTP_PASSWORD')
 
 FileUtils::mkdir_p INCOMING_PATH
 FileUtils::mkdir_p PDF_PATH
@@ -94,5 +95,7 @@ Signal.trap('USR1') do
 end
 
 use Rack::CommonLogger
-
+use Rack::Auth::Basic, 'Bill Uploader' do |username, password|
+  Rack::Utils.secure_compare(HTTP_USER, HTTP_PASSWORD)
+end
 run RackDAV::Handler.new(root: INCOMING_PATH)
