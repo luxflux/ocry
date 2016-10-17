@@ -96,6 +96,6 @@ end
 
 use Rack::CommonLogger
 use Rack::Auth::Basic, 'Bill Uploader' do |username, password|
-  Rack::Utils.secure_compare(HTTP_USER, HTTP_PASSWORD)
+  Rack::Utils.secure_compare(HTTP_USER, username) && Rack::Utils.secure_compare(HTTP_PASSWORD, password)
 end
 run RackDAV::Handler.new(root: INCOMING_PATH)
