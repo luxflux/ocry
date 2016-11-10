@@ -1,3 +1,11 @@
+GIT
+  remote: git://github.com/luxflux/rtesseract.git
+  revision: ed946fd0b3828c37a44fc874b3cada558914cf15
+  branch: stdout-version-output
+  specs:
+    rtesseract (2.1.0)
+      nokogiri
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -20,8 +28,6 @@ GEM
     rb-fsevent (0.9.7)
     rb-inotify (0.9.7)
       ffi (>= 0.5.0)
-    rtesseract (2.1.0)
-      nokogiri
     ruby_dep (1.5.0)
     rugged (0.24.0)
 
@@ -32,7 +38,7 @@ DEPENDENCIES
   listen
   mini_magick
   rack_dav
-  rtesseract
+  rtesseract!
   rugged
 
 BUNDLED WITH
