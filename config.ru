@@ -43,11 +43,13 @@ listener = Listen.to(INCOMING_PATH) do |modified, added, removed|
 end
 listener.start
 
-def merger
+def grouped_files
   files = Dir.glob("#{PDF_PATH}/**/*.pdf")
   return unless files.any?
-  grouped_files = files.group_by { |x| File.basename(x)[/[a-zA-Z]+/] }
+  files.group_by { |x| File.basename(x)[/[a-zA-Z]+/] }
+end
 
+def merger
   dir = File.join(STORAGE_PATH, Date.today.iso8601)
   FileUtils::mkdir_p dir
 
@@ -90,12 +92,30 @@ end
 merger
 
 Signal.trap('USR1') do
-  merger
-  committer
+  process.call
 end
 
-use Rack::CommonLogger
-use Rack::Auth::Basic, 'Bill Uploader' do |username, password|
-  Rack::Utils.secure_compare(HTTP_USER, username) && Rack::Utils.secure_compare(HTTP_PASSWORD, password)
+index = lambda do |env|
+  Rack::Response.new(ERB.new(File.read('index.html.erb')).result(binding))
 end
-run RackDAV::Handler.new(root: INCOMING_PATH)
+
+process = lambda do |env|
+  merger
+  committer
+  res = Rack::Response.new
+  res.redirect('/')
+  res.finish
+end
+
+map '/webdav' do
+  use Rack::Auth::Basic, 'Bill Uploader' do |username, password|
+    Rack::Utils.secure_compare(HTTP_USER, username) && Rack::Utils.secure_compare(HTTP_PASSWORD, password)
+  end
+  run RackDAV::Handler.new(root: INCOMING_PATH)
+end
+map '/process' do
+  run process
+end
+map '/' do
+  run index
+end
