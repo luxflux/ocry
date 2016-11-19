@@ -1,2 +1,5 @@
 tmp/
 ocry.pid
+.bundle
+ocry.log
+vendor

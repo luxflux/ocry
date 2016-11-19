@@ -4,6 +4,7 @@ require 'fileutils'
 require 'rtesseract'
 require 'shellwords'
 require 'rugged'
+require 'logger'
 
 %w(INCOMING_PATH PDF_PATH STORAGE_PATH GIT_REPO HTTP_USER HTTP_PASSWORD).each do |variable|
   raise "#{variable} not specified" unless ENV[variable]
@@ -19,6 +20,8 @@ HTTP_PASSWORD = ENV.fetch('HTTP_PASSWORD')
 
 FileUtils::mkdir_p INCOMING_PATH
 FileUtils::mkdir_p PDF_PATH
+
+logger = Logger.new('ocry.log')
 
 def process(file)
   puts "Processing #{file}"
@@ -107,6 +110,7 @@ process = lambda do |env|
   res.finish
 end
 
+use Rack::CommonLogger, logger
 map '/webdav' do
   use Rack::Auth::Basic, 'Bill Uploader' do |username, password|
     Rack::Utils.secure_compare(HTTP_USER, username) && Rack::Utils.secure_compare(HTTP_PASSWORD, password)
