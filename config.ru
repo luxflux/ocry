@@ -24,19 +24,19 @@ FileUtils::mkdir_p PDF_PATH
 logger = Logger.new('ocry.log')
 
 def process(file)
-  puts "Processing #{file}"
+  logger.info "Processing #{file}"
   image = RTesseract.new(file, lang: 'deu+eng', processor: 'mini_magick')
   pdf_path = image.to_pdf
   new_file = File.join(PDF_PATH, "#{File.basename(file)}.pdf")
   FileUtils.mv(pdf_path, new_file)
-  puts "Created #{new_file}"
+  logger.info "Created #{new_file}"
   new_file
 end
 
 listener = Listen.to(INCOMING_PATH) do |modified, added, removed|
-  puts "Modified: #{modified}"
-  puts "Added: #{added}"
-  puts "Removed: #{removed}"
+  logger.info "Modified: #{modified}"
+  logger.info "Added: #{added}"
+  logger.info "Removed: #{removed}"
 
   if added.any?
     pdfs = added.map do |file|
@@ -62,7 +62,7 @@ def merger
     base_command = %w(gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite)
     output_file = "-sOutputFile=#{file}"
     command = Shellwords.join([*base_command, output_file, *merge_files])
-    puts command
+    logger.info command
     %x[#{command}]
   end
 end
