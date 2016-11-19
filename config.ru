@@ -22,6 +22,7 @@ FileUtils::mkdir_p INCOMING_PATH
 FileUtils::mkdir_p PDF_PATH
 
 logger = Logger.new('ocry.log')
+logger.info 'starting up...'
 
 def process(file)
   logger.info "Processing #{file}"
@@ -123,3 +124,5 @@ end
 map '/' do
   run index
 end
+
+logger.info 'startup complete...'
