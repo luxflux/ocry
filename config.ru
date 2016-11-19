@@ -21,23 +21,28 @@ HTTP_PASSWORD = ENV.fetch('HTTP_PASSWORD')
 FileUtils::mkdir_p INCOMING_PATH
 FileUtils::mkdir_p PDF_PATH
 
-logger = Logger.new('ocry.log')
-logger.info 'starting up...'
+LOGGER = Logger.new('ocry.log')
+LOGGER.info 'starting up...'
+$stdout.reopen(File.open('ocry.stdout.log', 'a+'))
+$stderr.reopen(File.open('ocry.stderr.log', 'a+'))
 
 def process(file)
-  logger.info "Processing #{file}"
+  LOGGER.info "Processing #{file}"
   image = RTesseract.new(file, lang: 'deu+eng', processor: 'mini_magick')
   pdf_path = image.to_pdf
   new_file = File.join(PDF_PATH, "#{File.basename(file)}.pdf")
   FileUtils.mv(pdf_path, new_file)
-  logger.info "Created #{new_file}"
+  LOGGER.info "Created #{new_file}"
   new_file
+
+  LOGGER.info "Removing #{file}"
+  File.unlink file
 end
 
 listener = Listen.to(INCOMING_PATH) do |modified, added, removed|
-  logger.info "Modified: #{modified}"
-  logger.info "Added: #{added}"
-  logger.info "Removed: #{removed}"
+  LOGGER.debug "Modified: #{modified}"
+  LOGGER.debug "Added: #{added}"
+  LOGGER.debug "Removed: #{removed}"
 
   if added.any?
     pdfs = added.map do |file|
@@ -49,8 +54,9 @@ listener.start
 
 def grouped_files
   files = Dir.glob("#{PDF_PATH}/**/*.pdf")
-  return unless files.any?
-  files.group_by { |x| File.basename(x)[/[a-zA-Z]+/] }
+  LOGGER.debug files
+  return {} unless files.any?
+  files.group_by { |x| File.basename(x)[/[a-zA-Z ]+/].gsub(' Seite ', '').strip }
 end
 
 def merger
@@ -59,12 +65,21 @@ def merger
 
   grouped_files.each do |name, merge_files|
     file = File.join(dir, "#{name}.pdf")
-    next if File.exists?(file)
-    base_command = %w(gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite)
-    output_file = "-sOutputFile=#{file}"
-    command = Shellwords.join([*base_command, output_file, *merge_files])
-    logger.info command
-    %x[#{command}]
+    if File.exists?(file)
+      LOGGER.info "#{file} already exists, won't merge #{merge_files.join(',')} into #{file}"
+    else
+      LOGGER.info "Merging #{merge_files.join(',')} into #{name}"
+      base_command = %w(gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite)
+      output_file = "-sOutputFile=#{file}"
+      command = Shellwords.join([*base_command, output_file, *merge_files])
+      LOGGER.info command
+      %x[#{command}]
+    end
+
+    merge_files.each do |file|
+      LOGGER.info "Removing file #{file}"
+      File.unlink file
+    end
   end
 end
 
@@ -93,8 +108,6 @@ unless Dir.exists?(STORAGE_PATH)
   Rugged::Repository.clone_at(GIT_REPO, STORAGE_PATH)
 end
 
-merger
-
 Signal.trap('USR1') do
   process.call
 end
@@ -111,7 +124,7 @@ process = lambda do |env|
   res.finish
 end
 
-use Rack::CommonLogger, logger
+use Rack::CommonLogger, LOGGER
 map '/webdav' do
   use Rack::Auth::Basic, 'Bill Uploader' do |username, password|
     Rack::Utils.secure_compare(HTTP_USER, username) && Rack::Utils.secure_compare(HTTP_PASSWORD, password)
@@ -125,4 +138,4 @@ map '/' do
   run index
 end
 
-logger.info 'startup complete...'
+LOGGER.info 'startup complete...'

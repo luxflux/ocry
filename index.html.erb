@@ -1,18 +1,22 @@
 <html>
   <head></head>
   <body>
-    <ul>
-      <% grouped_files do |name, merge_files| %>
-        <li><%= name %></li>
-        <ul>
-          <% merge_files.each do |file| %>
-            <li><%= file %></li>
-          <% end %>
-        </ul>
-      <% end %>
-    </ul>
-    <form method="POST" action="/process">
-      <input type="submit" value="Start Processing" />
-    </form>
+    <% if grouped_files.keys.any? %>
+      <ul>
+        <% grouped_files.each do |name, merge_files| %>
+          <li><%= name %></li>
+          <ul>
+            <% merge_files.each do |file| %>
+              <li><%= file %></li>
+            <% end %>
+          </ul>
+        <% end %>
+      </ul>
+      <form method="POST" action="/process">
+        <input type="submit" value="Start Processing" />
+      </form>
+    <% else %>
+      <p>Nothing to do...</p>
+    <% end %>
   </body>
 </html>
