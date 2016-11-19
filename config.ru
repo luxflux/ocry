@@ -82,7 +82,7 @@ def committer
   }
   Rugged::Commit.create(repo, options)
   index.write
-  repo.push('origin')
+  repo.push('origin', ['refs/heads/master'])
 end
 
 unless Dir.exists?(STORAGE_PATH)
